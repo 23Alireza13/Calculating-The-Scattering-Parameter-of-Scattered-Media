@@ -1,3 +1,5 @@
+The text is modified by Claude Sonnet 5.5.
+
 # Blurred Microscope Image
 
 MATLAB code from an internship project at LPT on measuring how blurred
