@@ -84,6 +84,7 @@ classdef myimage
         extermum_contrast = obj.contrast_calculator(orig_data, sorted_extermum, extermum_locs, extermum_FWHM, extermum_type);
         end   
         function filtered_result = data_filter_gaussian(obj, orig_data, deviation) %A filter for data
+            %deviation = 50;
             filtered_result = imgaussfilt(orig_data, deviation);
         end 
         function filtered_result = derivator_gradient(obj, data, deviation) %A derivator which would be used to find peaks and valleys
@@ -130,7 +131,7 @@ classdef myimage
             [sorted_peaks ,peak_locs, peak_FWHM, sorted_valleys ,valley_locs, valley_FWHM] = peaks_and_valleys_analyser(obj, filtered_diff_data, filtered_data, MinPeakProminence);
             obj.intensity_plot(filtered_data, filtered_diff_data, sorted_peaks, peak_locs, peak_FWHM, sorted_valleys, valley_locs, valley_FWHM)
         end
-        function edge_detection(obj)
+        function edge_detection(obj, val, Name)
             % Load the grayscale image
             img = obj.raw_unint;
             if size(img, 3) == 3
@@ -143,24 +144,30 @@ classdef myimage
             title('Original Grayscale Image');
             
             % Step 1: Apply Gaussian smoothing to reduce noise
-            smoothed_img = imgaussfilt(img, 2); % Adjust the second parameter for more/less smoothing
-            smoothed_img = obj.data_filter_gaussian(obj.raw_double);
+            smoothed_img = obj.data_filter_gaussian(obj.raw_double, val);
+            
             % Step 2: Perform Canny edge detection
-            edges = edge(smoothed_img, 'Canny');
+            edges = edge(smoothed_img, Name);
             
-            % Step 3: Create an RGB version of the grayscale image for overlaying
-            edges_overlay = repmat(img, 1, 1, 3); % Convert grayscale image to RGB by replicating channels
+            % Step 3: Analyze edge detection by row
+            edge_strength_by_row = sum(edges, 2);  % Sum of edges in each row
+        
+            % Step 4: Identify rows with strongest edge detection (top 10% rows)
+            threshold = prctile(edge_strength_by_row, 90);  % Define threshold based on percentile
+            strong_edge_rows = find(edge_strength_by_row >= threshold);  % Rows with strong edges
             
-            % Step 4: Overlay edges in white
-            edges_overlay(:,:,1) = edges_overlay(:,:,1) + uint8(edges) * 220; % Adjust intensity for red channel
-            edges_overlay(:,:,2) = edges_overlay(:,:,2) + uint8(edges) * 220; % Adjust intensity for green channel
-            edges_overlay(:,:,3) = edges_overlay(:,:,3) + uint8(edges) * 220; % Adjust intensity for blue channel
+            % Step 5: Create an overlay only for rows with strong edge detection
+            edges_overlay = repmat(img, 1, 1, 3);  % Convert grayscale image to RGB by replicating channels
+            for row = strong_edge_rows'
+                edges_overlay(row, :, 1) = edges_overlay(row, :, 1) + uint8(edges(row, :) * 220); % Red channel
+                edges_overlay(row, :, 2) = edges_overlay(row, :, 2) + uint8(edges(row, :) * 220); % Green channel
+                edges_overlay(row, :, 3) = edges_overlay(row, :, 3) + uint8(edges(row, :) * 220); % Blue channel
+            end
             
-            % Display the overlay image
+            % Display the overlay image with enhanced edge detection for selected rows
             figure;
             imshow(edges_overlay);
-            title('Overlay of Edges on Original Image');
-
+            title('Overlay of Prominent Edges on Original Image');
         end
     end
 end

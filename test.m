@@ -1,6 +1,6 @@
 clc;
 clear all;
 close all;
-%%
-image=myimage("Nylon_Strand_IL_0.bmp");
-image.intensity_analyser()
+
+image=myimage("Sample50_IL7_040.bmp");
+image.edge_detection(1, "Sobel");
